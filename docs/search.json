@@ -1,125 +1,5 @@
 [
   {
-    "objectID": "tat_analytics.html",
-    "href": "tat_analytics.html",
-    "title": "Claims Turnaround Time (TAT) Analytics",
-    "section": "",
-    "text": "November 2024 — Paid Date − Created Date\n\n\n\n\nTotal Claims\n\n\n77\n\n\nCreated in Nov 2024\n\n\n\n\nPaid Claims\n\n\n74\n\n\n96.1% of total\n\n\n\n\nMin TAT\n\n\n3 days\n\n\n▼ 2 days vs prev month\n\n\n\n\nMedian TAT\n\n\n22 days\n\n\n▲ +0 days vs prev month\n\n\n\n\nMax TAT\n\n\n72 days\n\n\n▼ 40 days vs prev month\n\n\n\n\n% Paid ≤ 30 days\n\n\n75.7%\n\n\n▼ 1 pp vs prev month"
-  },
-  {
-    "objectID": "tat_analytics.html#sec-metrics",
-    "href": "tat_analytics.html#sec-metrics",
-    "title": "Claims Turnaround Time (TAT) Analytics",
-    "section": "",
-    "text": "November 2024 — Paid Date − Created Date\n\n\n\n\nTotal Claims\n\n\n77\n\n\nCreated in Nov 2024\n\n\n\n\nPaid Claims\n\n\n74\n\n\n96.1% of total\n\n\n\n\nMin TAT\n\n\n3 days\n\n\n▼ 2 days vs prev month\n\n\n\n\nMedian TAT\n\n\n22 days\n\n\n▲ +0 days vs prev month\n\n\n\n\nMax TAT\n\n\n72 days\n\n\n▼ 40 days vs prev month\n\n\n\n\n% Paid ≤ 30 days\n\n\n75.7%\n\n\n▼ 1 pp vs prev month"
-  },
-  {
-    "objectID": "tat_analytics.html#sec-trend",
-    "href": "tat_analytics.html#sec-trend",
-    "title": "Claims Turnaround Time (TAT) Analytics",
-    "section": "AC2 · TAT Trend Over Time",
-    "text": "AC2 · TAT Trend Over Time\nThe charts below show average TAT for claims that completed (received a paid date) within each period. Use the toggle to switch between weekly and monthly granularity.\n\n\nShow code\n# Weekly\nweekly_tat &lt;- paid_claims |&gt;\n  mutate(period = floor_date(paid_date, \"week\", week_start = 1)) |&gt;\n  group_by(period) |&gt;\n  summarise(\n    avg_tat = mean(tat_days),\n    med_tat = median(tat_days),\n    n       = n(),\n    .groups = \"drop\"\n  ) |&gt;\n  filter(n &gt;= 5) |&gt;\n  mutate(granularity = \"Weekly\")\n\n# Monthly\nmonthly_tat &lt;- paid_claims |&gt;\n  mutate(period = floor_date(paid_date, \"month\")) |&gt;\n  group_by(period) |&gt;\n  summarise(\n    avg_tat = mean(tat_days),\n    med_tat = median(tat_days),\n    n       = n(),\n    .groups = \"drop\"\n  ) |&gt;\n  mutate(granularity = \"Monthly\")\n\n\n\n📅 Weekly📆 Monthly\n\n\n\n\nShow code\np_week &lt;- ggplot(weekly_tat, aes(x = period)) +\n  geom_ribbon(aes(ymin = avg_tat - 4, ymax = avg_tat + 4),\n              fill = pal$primary, alpha = 0.10) +\n  geom_line(aes(y = avg_tat, colour = \"Mean TAT\"),  linewidth = 1.1) +\n  geom_line(aes(y = med_tat, colour = \"Median TAT\"), linewidth = 0.8, linetype = \"dashed\") +\n  geom_point(aes(y = avg_tat, colour = \"Mean TAT\",\n                 text = glue(\"Week: {format(period,'%d %b %Y')}\\nMean TAT: {round(avg_tat,1)} days\\nClaims: {n}\")),\n             size = 2, shape = 21, fill = \"white\", stroke = 1.5) +\n  geom_hline(yintercept = 30, linetype = \"dotted\", colour = pal$red,\n             linewidth = 0.7) +\n  annotate(\"text\", x = min(weekly_tat$period) + 3, y = 31.8,\n           label = \"30-day target\", hjust = 0, size = 2.8, colour = pal$red) +\n  scale_colour_manual(values = c(\"Mean TAT\" = pal$primary, \"Median TAT\" = pal$accent),\n                      name = NULL) +\n  scale_x_date(date_labels = \"%d %b\", date_breaks = \"4 weeks\") +\n  scale_y_continuous(limits = c(0, NA), expand = expansion(mult = c(0, .12)),\n                     labels = \\(x) paste0(x, \"d\")) +\n  labs(title    = \"Average TAT by Week\",\n       subtitle = \"Jan – Dec 2024 · Plotted on paid date · Shaded band = ±4 days\",\n       x = NULL, y = \"Avg TAT (days)\")\n\nggplotly(p_week, tooltip = \"text\") |&gt;\n  layout(legend = list(orientation = \"h\", x = 0, y = -0.15))\n\n\n\n\n\n\n\n\n\n\nShow code\np_month &lt;- ggplot(monthly_tat, aes(x = period)) +\n  geom_col(aes(y = avg_tat,\n               text = glue(\"{format(period,'%b %Y')}\\nMean: {round(avg_tat,1)}d\\nMedian: {round(med_tat,1)}d\\nClaims: {n}\")),\n           fill = pal$primary, alpha = 0.75, width = 22) +\n  geom_line(aes(y = avg_tat),  colour = pal$primary, linewidth = 1.1) +\n  geom_line(aes(y = med_tat),  colour = pal$accent,  linewidth = 0.9, linetype = \"dashed\") +\n  geom_point(aes(y = avg_tat), colour = pal$primary, size = 3) +\n  geom_point(aes(y = med_tat), colour = pal$accent,  size = 2.5, shape = 21,\n             fill = \"white\", stroke = 1.2) +\n  geom_text(aes(y = avg_tat, label = round(avg_tat, 1)),\n            vjust = -0.9, size = 2.7, colour = pal$text) +\n  geom_hline(yintercept = 30, linetype = \"dotted\", colour = pal$red, linewidth = 0.7) +\n  annotate(\"text\", x = min(monthly_tat$period) + 5, y = 31.8,\n           label = \"30-day target\", hjust = 0, size = 2.8, colour = pal$red) +\n  scale_x_date(date_labels = \"%b '%y\", date_breaks = \"1 month\") +\n  scale_y_continuous(limits = c(0, NA), expand = expansion(mult = c(0, .15)),\n                     labels = \\(x) paste0(x, \"d\")) +\n  labs(title    = \"Average TAT by Month\",\n       subtitle = \"Jan – Dec 2024 · Bars = mean · Dashed line = median · Label = mean days\",\n       x = NULL, y = \"Avg TAT (days)\")\n\nggplotly(p_month, tooltip = \"text\") |&gt;\n  layout(showlegend = FALSE)"
-  },
-  {
-    "objectID": "tat_analytics.html#sec-dist",
-    "href": "tat_analytics.html#sec-dist",
-    "title": "Claims Turnaround Time (TAT) Analytics",
-    "section": "TAT Distribution",
-    "text": "TAT Distribution\n\n\nShow code\np_dist &lt;- paid_claims |&gt;\n  mutate(month_lbl = format(paid_month, \"%b\")) |&gt;\n  filter(paid_month &gt;= as.Date(\"2024-07-01\")) |&gt;   # last 6 months for readability\n  ggplot(aes(x = tat_days, y = after_stat(density))) +\n  geom_histogram(fill = pal$primary, alpha = 0.7, binwidth = 5, boundary = 0) +\n  geom_density(colour = pal$accent, linewidth = 0.9) +\n  geom_vline(xintercept = 30, colour = pal$red, linetype = \"dashed\", linewidth = 0.8) +\n  annotate(\"text\", x = 31, y = Inf, label = \"30d\", hjust = 0, vjust = 1.5,\n           size = 3, colour = pal$red) +\n  facet_wrap(~month_lbl, nrow = 2) +\n  scale_x_continuous(limits = c(0, 100), breaks = c(0, 30, 60, 90)) +\n  labs(title    = \"TAT Distribution by Month (Jul – Dec 2024)\",\n       subtitle = \"Histogram + density curve · Dashed = 30-day target\",\n       x = \"TAT (days)\", y = \"Density\")\n\np_dist"
-  },
-  {
-    "objectID": "tat_analytics.html#sec-table",
-    "href": "tat_analytics.html#sec-table",
-    "title": "Claims Turnaround Time (TAT) Analytics",
-    "section": "Monthly Summary Table",
-    "text": "Monthly Summary Table\n\n\nShow code\ntable_data &lt;- paid_claims |&gt;\n  mutate(month = floor_date(paid_date, \"month\")) |&gt;\n  group_by(Month = month) |&gt;\n  summarise(\n    `Claims Paid`  = n(),\n    `Min TAT`      = min(tat_days),\n    `P25 TAT`      = quantile(tat_days, 0.25),\n    `Median TAT`   = round(median(tat_days), 1),\n    `Mean TAT`     = round(mean(tat_days), 1),\n    `P75 TAT`      = quantile(tat_days, 0.75),\n    `Max TAT`      = max(tat_days),\n    `% ≤ 30 days`  = round(mean(tat_days &lt;= 30) * 100, 1),\n    .groups = \"drop\"\n  ) |&gt;\n  mutate(Month = format(Month, \"%b %Y\"))\n\ntable_data |&gt;\n  gt() |&gt;\n  tab_header(\n    title    = md(\"**Monthly TAT Summary — 2024**\"),\n    subtitle = \"TAT = Paid Date − Created Date\"\n  ) |&gt;\n  tab_spanner(\n    label   = \"Turnaround Time (days)\",\n    columns = c(`Min TAT`, `P25 TAT`, `Median TAT`, `Mean TAT`, `P75 TAT`, `Max TAT`)\n  ) |&gt;\n  fmt_number(columns = `Claims Paid`,  decimals = 0, use_seps = TRUE) |&gt;\n  fmt_number(columns = c(`Min TAT`, `P25 TAT`, `Median TAT`,\n                         `Mean TAT`, `P75 TAT`, `Max TAT`),\n             decimals = 1) |&gt;\n  fmt_number(columns = `% ≤ 30 days`, decimals = 1, pattern = \"{x}%\") |&gt;\n  cols_align(align = \"center\", columns = -Month) |&gt;\n  cols_align(align = \"left\",   columns = Month) |&gt;\n  data_color(\n    columns = `Median TAT`,\n    method  = \"numeric\",\n    palette = c(\"#0E9F6E\", \"#FFFBEB\", \"#E02424\"),\n    domain  = c(15, 40)\n  ) |&gt;\n  data_color(\n    columns = `% ≤ 30 days`,\n    method  = \"numeric\",\n    palette = c(\"#E02424\", \"#FFFBEB\", \"#0E9F6E\"),\n    domain  = c(50, 90)\n  ) |&gt;\n  gtExtras::gt_highlight_rows(\n    rows      = Month == \"Nov 2024\",\n    fill      = \"#EFF6FF\",\n    font_weight = \"bold\"\n  ) |&gt;\n  tab_style(\n    style     = list(cell_fill(color = \"#1A56DB\"),\n                     cell_text(color = \"white\", weight = \"bold\")),\n    locations = cells_column_labels()\n  ) |&gt;\n  tab_style(\n    style     = list(cell_fill(color = \"#1A56DB\"),\n                     cell_text(color = \"white\", weight = \"bold\")),\n    locations = cells_column_spanners()\n  ) |&gt;\n  tab_options(\n    table.font.size               = 13,\n    heading.title.font.size       = 15,\n    table.width                   = pct(100),\n    table.border.top.color        = \"transparent\",\n    table.border.bottom.color     = \"transparent\",\n    row.striping.background_color = \"#F8F9FC\",\n    row.striping.include_table_body = TRUE\n  ) |&gt;\n  opt_row_striping() |&gt;\n  tab_footnote(\n    footnote  = \"Highlighted row = current reporting month (Nov 2024)\",\n    locations = cells_title(groups = \"subtitle\")\n  )\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nMonthly TAT Summary — 2024\n\n\nTAT = Paid Date − Created Date1\n\n\nMonth\nClaims Paid\n\nTurnaround Time (days)\n\n% ≤ 30 days\n\n\nMin TAT\nP25 TAT\nMedian TAT\nMean TAT\nP75 TAT\nMax TAT\n\n\n\n\nJan 2024\n25\n5.0\n9.0\n11.0\n12.8\n15.0\n26.0\n100.0%\n\n\nFeb 2024\n80\n7.0\n13.0\n20.0\n21.6\n28.0\n57.0\n80.0%\n\n\nMar 2024\n81\n5.0\n15.0\n22.0\n26.2\n37.0\n69.0\n69.1%\n\n\nApr 2024\n96\n7.0\n13.8\n18.5\n22.5\n28.0\n70.0\n78.1%\n\n\nMay 2024\n84\n7.0\n15.0\n20.5\n24.3\n29.0\n85.0\n78.6%\n\n\nJun 2024\n85\n7.0\n14.0\n21.0\n23.8\n29.0\n87.0\n81.2%\n\n\nJul 2024\n85\n7.0\n14.0\n20.0\n23.4\n28.0\n110.0\n78.8%\n\n\nAug 2024\n97\n5.0\n15.0\n23.0\n26.8\n33.0\n81.0\n66.0%\n\n\nSep 2024\n80\n4.0\n15.0\n20.0\n23.0\n30.2\n73.0\n75.0%\n\n\nOct 2024\n90\n5.0\n14.0\n22.0\n25.3\n29.8\n112.0\n76.7%\n\n\nNov 2024\n74\n3.0\n14.0\n22.0\n23.8\n29.8\n72.0\n75.7%\n\n\nDec 2024\n78\n6.0\n14.0\n19.0\n22.4\n27.8\n59.0\n80.8%\n\n\nJan 2025\n51\n7.0\n19.5\n27.0\n29.0\n34.0\n79.0\n70.6%\n\n\nFeb 2025\n10\n38.0\n41.2\n42.5\n46.4\n47.5\n74.0\n0.0%\n\n\n\n1 Highlighted row = current reporting month (Nov 2024)"
-  },
-  {
-    "objectID": "tat_analytics.html#sec-appendix",
-    "href": "tat_analytics.html#sec-appendix",
-    "title": "Claims Turnaround Time (TAT) Analytics",
-    "section": "Appendix: Data Dictionary",
-    "text": "Appendix: Data Dictionary\n\n\n\nField\nDescription\n\n\n\n\nclaim_id\nUnique claim identifier\n\n\ncreated_date\nDate the claim was submitted (TAT start)\n\n\npaid_date\nDate the claim was paid (TAT end)\n\n\ntat_days\npaid_date − created_date in calendar days\n\n\nis_paid\nBoolean — whether a paid date exists\n\n\n\n\nNote: Sample data is randomly generated with set.seed(42). Replace the data generation block with your actual claims extract."
-  },
-  {
-    "objectID": "phase-mockup.html",
-    "href": "phase-mockup.html",
-    "title": "Claims Turnaround Time (TAT)",
-    "section": "",
-    "text": "This is the count and value of claims in ERP that are yet to be paid"
-  },
-  {
-    "objectID": "phase-mockup.html#definition",
-    "href": "phase-mockup.html#definition",
-    "title": "Claims Turnaround Time (TAT)",
-    "section": "",
-    "text": "This is the count and value of claims in ERP that are yet to be paid"
-  },
-  {
-    "objectID": "phase-mockup.html#underlying-data",
-    "href": "phase-mockup.html#underlying-data",
-    "title": "Claims Turnaround Time (TAT)",
-    "section": "Underlying data",
-    "text": "Underlying data\n\n\nShow code\nglimpse(claims_raw)\n\n\nRows: 1,200\nColumns: 8\n$ claim_id      &lt;chr&gt; \"CLM-00001\", \"CLM-00002\", \"CLM-00003\", \"CLM-00004\", \"CLM…\n$ created_date  &lt;date&gt; 2026-02-18, 2026-11-17, 2026-06-02, 2026-03-15, 2026-08…\n$ is_paid       &lt;lgl&gt; TRUE, TRUE, TRUE, TRUE, TRUE, FALSE, TRUE, TRUE, TRUE, T…\n$ raw_tat       &lt;dbl&gt; 35, 39, 9, 33, 31, 34, 12, 76, 5, 20, 21, 18, 30, 22, 13…\n$ paid_date     &lt;date&gt; 2026-03-25, 2026-12-26, 2026-06-11, 2026-04-17, 2026-09…\n$ tat_days      &lt;dbl&gt; 35, 39, 9, 33, 31, NA, 12, 76, 5, 20, 21, 18, 30, 22, 13…\n$ created_month &lt;date&gt; 2026-02-01, 2026-11-01, 2026-06-01, 2026-03-01, 2026-08…\n$ paid_month    &lt;date&gt; 2026-03-01, 2026-12-01, 2026-06-01, 2026-04-01, 2026-09…"
-  },
-  {
-    "objectID": "indicators/erp-payment-ready.html",
-    "href": "indicators/erp-payment-ready.html",
-    "title": "Indicator Name: [Insert Name]",
-    "section": "",
-    "text": "Business Goal: [Describe what decision this indicator drives.] Target Audience: [e.g., Executive Leadership, Marketing Ops] Update Frequency: [e.g., Real-time, Daily at 06:00 UTC, Monthly]"
-  },
-  {
-    "objectID": "indicators/erp-payment-ready.html#executive-summary",
-    "href": "indicators/erp-payment-ready.html#executive-summary",
-    "title": "Indicator Name: [Insert Name]",
-    "section": "",
-    "text": "Business Goal: [Describe what decision this indicator drives.] Target Audience: [e.g., Executive Leadership, Marketing Ops] Update Frequency: [e.g., Real-time, Daily at 06:00 UTC, Monthly]"
-  },
-  {
-    "objectID": "indicators/erp-payment-ready.html#calculation-logic-formula",
-    "href": "indicators/erp-payment-ready.html#calculation-logic-formula",
-    "title": "Indicator Name: [Insert Name]",
-    "section": "2 2. Calculation Logic & Formula",
-    "text": "2 2. Calculation Logic & Formula\nThis section defines the “North Star” for the Backend Team.\n\n2.1 Mathematical Definition\nThe indicator is calculated as: \\[Indicator = \\frac{\\sum(\\text{Successful Transactions})}{\\sum(\\text{Total Attempts})} \\times 100\\]\n\n\n2.2 Logic Rules\n\nInclusion: Include only records where status = 'ACTIVE'.\nExclusion: Ignore test accounts (IDs starting with TEST_).\nNull Handling: If denominator is 0, return null (not 0)."
-  },
-  {
-    "objectID": "indicators/erp-payment-ready.html#data-schema-backend-specs",
-    "href": "indicators/erp-payment-ready.html#data-schema-backend-specs",
-    "title": "Indicator Name: [Insert Name]",
-    "section": "3 3. Data Schema (Backend Specs)",
-    "text": "3 3. Data Schema (Backend Specs)\nSpecific requirements for the data warehouse/API layer.\n\n\n\n\n\n\n\n\n\nField Name\nType\nSource Table\nDescription\n\n\n\n\nevent_timestamp\nDateTime\nraw_events\nThe UTC time of the action.\n\n\nmetric_value\nFloat\nCalculated\nThe final percentage result.\n\n\ndimension_category\nString\ndim_products\nUsed for frontend filtering."
-  },
-  {
-    "objectID": "indicators/erp-payment-ready.html#visual-prototype-frontend-specs",
-    "href": "indicators/erp-payment-ready.html#visual-prototype-frontend-specs",
-    "title": "Indicator Name: [Insert Name]",
-    "section": "4 4. Visual Prototype (Frontend Specs)",
-    "text": "4 4. Visual Prototype (Frontend Specs)\nThis section uses dummy data to show the Frontend Team how to render the indicator."
-  },
-  {
-    "objectID": "index.html",
-    "href": "index.html",
-    "title": "Indicator Directory",
-    "section": "",
-    "text": "Welcome to the Single Source of Truth for our analytics logic.",
-    "crumbs": [
-      "Overview",
-      "Indicator Directory"
-    ]
-  },
-  {
-    "objectID": "index.html#indicator-health-status",
-    "href": "index.html#indicator-health-status",
-    "title": "Indicator Directory",
-    "section": "1 Indicator Health Status",
-    "text": "1 Indicator Health Status\n\n\n\nIndicator\nStatus\nLast Validated\nOwner\n\n\n\n\nMonthly Revenue\n?meta:status.prod\n2023-10-27\nBackend Team\n\n\nChurn Rate\n?meta:status.dev\n2023-10-25\nData Science\n\n\n\n\n\n\n\n\n\nImportant\n\n\n\nAll definitions here are binding for both Frontend (UI) and Backend (ETL) implementations.",
-    "crumbs": [
-      "Overview",
-      "Indicator Directory"
-    ]
-  },
-  {
     "objectID": "template.html",
     "href": "template.html",
     "title": "Indicator Name: [Insert Name]",
@@ -153,5 +33,128 @@
     "title": "Indicator Name: [Insert Name]",
     "section": "4 4. Visual Prototype (Frontend Specs)",
     "text": "4 4. Visual Prototype (Frontend Specs)\nThis section uses dummy data to show the Frontend Team how to render the indicator."
+  },
+  {
+    "objectID": "indicators/tat_analytics.html",
+    "href": "indicators/tat_analytics.html",
+    "title": "Claims Turnaround Time (TAT) Analytics",
+    "section": "",
+    "text": "November 2024 — Paid Date − Created Date\n\n\n\n\nTotal Claims\n\n\n77\n\n\nCreated in Nov 2024\n\n\n\n\nPaid Claims\n\n\n74\n\n\n96.1% of total\n\n\n\n\nMin TAT\n\n\n3 days\n\n\n▼ 2 days vs prev month\n\n\n\n\nMedian TAT\n\n\n22 days\n\n\n▲ +0 days vs prev month\n\n\n\n\nMax TAT\n\n\n72 days\n\n\n▼ 40 days vs prev month\n\n\n\n\n% Paid ≤ 30 days\n\n\n75.7%\n\n\n▼ 1 pp vs prev month",
+    "crumbs": [
+      "Core Metrics",
+      "Claims Turnaround Time (TAT) Analytics"
+    ]
+  },
+  {
+    "objectID": "indicators/tat_analytics.html#sec-metrics",
+    "href": "indicators/tat_analytics.html#sec-metrics",
+    "title": "Claims Turnaround Time (TAT) Analytics",
+    "section": "",
+    "text": "November 2024 — Paid Date − Created Date\n\n\n\n\nTotal Claims\n\n\n77\n\n\nCreated in Nov 2024\n\n\n\n\nPaid Claims\n\n\n74\n\n\n96.1% of total\n\n\n\n\nMin TAT\n\n\n3 days\n\n\n▼ 2 days vs prev month\n\n\n\n\nMedian TAT\n\n\n22 days\n\n\n▲ +0 days vs prev month\n\n\n\n\nMax TAT\n\n\n72 days\n\n\n▼ 40 days vs prev month\n\n\n\n\n% Paid ≤ 30 days\n\n\n75.7%\n\n\n▼ 1 pp vs prev month",
+    "crumbs": [
+      "Core Metrics",
+      "Claims Turnaround Time (TAT) Analytics"
+    ]
+  },
+  {
+    "objectID": "indicators/tat_analytics.html#sec-trend",
+    "href": "indicators/tat_analytics.html#sec-trend",
+    "title": "Claims Turnaround Time (TAT) Analytics",
+    "section": "AC2 · TAT Trend Over Time",
+    "text": "AC2 · TAT Trend Over Time\nThe charts below show average TAT for claims that completed (received a paid date) within each period. Use the toggle to switch between weekly and monthly granularity.\n\n\nShow code\n# Weekly\nweekly_tat &lt;- paid_claims |&gt;\n  mutate(period = floor_date(paid_date, \"week\", week_start = 1)) |&gt;\n  group_by(period) |&gt;\n  summarise(\n    avg_tat = mean(tat_days),\n    med_tat = median(tat_days),\n    n       = n(),\n    .groups = \"drop\"\n  ) |&gt;\n  filter(n &gt;= 5) |&gt;\n  mutate(granularity = \"Weekly\")\n\n# Monthly\nmonthly_tat &lt;- paid_claims |&gt;\n  mutate(period = floor_date(paid_date, \"month\")) |&gt;\n  group_by(period) |&gt;\n  summarise(\n    avg_tat = mean(tat_days),\n    med_tat = median(tat_days),\n    n       = n(),\n    .groups = \"drop\"\n  ) |&gt;\n  mutate(granularity = \"Monthly\")\n\n\n\n📅 Weekly📆 Monthly\n\n\n\n\nShow code\np_week &lt;- ggplot(weekly_tat, aes(x = period)) +\n  geom_ribbon(aes(ymin = avg_tat - 4, ymax = avg_tat + 4),\n              fill = pal$primary, alpha = 0.10) +\n  geom_line(aes(y = avg_tat, colour = \"Mean TAT\"),  linewidth = 1.1) +\n  geom_line(aes(y = med_tat, colour = \"Median TAT\"), linewidth = 0.8, linetype = \"dashed\") +\n  geom_point(aes(y = avg_tat, colour = \"Mean TAT\",\n                 text = glue(\"Week: {format(period,'%d %b %Y')}\\nMean TAT: {round(avg_tat,1)} days\\nClaims: {n}\")),\n             size = 2, shape = 21, fill = \"white\", stroke = 1.5) +\n  geom_hline(yintercept = 30, linetype = \"dotted\", colour = pal$red,\n             linewidth = 0.7) +\n  annotate(\"text\", x = min(weekly_tat$period) + 3, y = 31.8,\n           label = \"30-day target\", hjust = 0, size = 2.8, colour = pal$red) +\n  scale_colour_manual(values = c(\"Mean TAT\" = pal$primary, \"Median TAT\" = pal$accent),\n                      name = NULL) +\n  scale_x_date(date_labels = \"%d %b\", date_breaks = \"4 weeks\") +\n  scale_y_continuous(limits = c(0, NA), expand = expansion(mult = c(0, .12)),\n                     labels = \\(x) paste0(x, \"d\")) +\n  labs(title    = \"Average TAT by Week\",\n       subtitle = \"Jan – Dec 2024 · Plotted on paid date · Shaded band = ±4 days\",\n       x = NULL, y = \"Avg TAT (days)\")\n\nggplotly(p_week, tooltip = \"text\") |&gt;\n  layout(legend = list(orientation = \"h\", x = 0, y = -0.15))\n\n\n\n\n\n\n\n\n\n\nShow code\np_month &lt;- ggplot(monthly_tat, aes(x = period)) +\n  geom_col(aes(y = avg_tat,\n               text = glue(\"{format(period,'%b %Y')}\\nMean: {round(avg_tat,1)}d\\nMedian: {round(med_tat,1)}d\\nClaims: {n}\")),\n           fill = pal$primary, alpha = 0.75, width = 22) +\n  geom_line(aes(y = avg_tat),  colour = pal$primary, linewidth = 1.1) +\n  geom_line(aes(y = med_tat),  colour = pal$accent,  linewidth = 0.9, linetype = \"dashed\") +\n  geom_point(aes(y = avg_tat), colour = pal$primary, size = 3) +\n  geom_point(aes(y = med_tat), colour = pal$accent,  size = 2.5, shape = 21,\n             fill = \"white\", stroke = 1.2) +\n  geom_text(aes(y = avg_tat, label = round(avg_tat, 1)),\n            vjust = -0.9, size = 2.7, colour = pal$text) +\n  geom_hline(yintercept = 30, linetype = \"dotted\", colour = pal$red, linewidth = 0.7) +\n  annotate(\"text\", x = min(monthly_tat$period) + 5, y = 31.8,\n           label = \"30-day target\", hjust = 0, size = 2.8, colour = pal$red) +\n  scale_x_date(date_labels = \"%b '%y\", date_breaks = \"1 month\") +\n  scale_y_continuous(limits = c(0, NA), expand = expansion(mult = c(0, .15)),\n                     labels = \\(x) paste0(x, \"d\")) +\n  labs(title    = \"Average TAT by Month\",\n       subtitle = \"Jan – Dec 2024 · Bars = mean · Dashed line = median · Label = mean days\",\n       x = NULL, y = \"Avg TAT (days)\")\n\nggplotly(p_month, tooltip = \"text\") |&gt;\n  layout(showlegend = FALSE)",
+    "crumbs": [
+      "Core Metrics",
+      "Claims Turnaround Time (TAT) Analytics"
+    ]
+  },
+  {
+    "objectID": "indicators/tat_analytics.html#sec-dist",
+    "href": "indicators/tat_analytics.html#sec-dist",
+    "title": "Claims Turnaround Time (TAT) Analytics",
+    "section": "TAT Distribution",
+    "text": "TAT Distribution\n\n\nShow code\np_dist &lt;- paid_claims |&gt;\n  mutate(month_lbl = format(paid_month, \"%b\")) |&gt;\n  filter(paid_month &gt;= as.Date(\"2024-07-01\")) |&gt;   # last 6 months for readability\n  ggplot(aes(x = tat_days, y = after_stat(density))) +\n  geom_histogram(fill = pal$primary, alpha = 0.7, binwidth = 5, boundary = 0) +\n  geom_density(colour = pal$accent, linewidth = 0.9) +\n  geom_vline(xintercept = 30, colour = pal$red, linetype = \"dashed\", linewidth = 0.8) +\n  annotate(\"text\", x = 31, y = Inf, label = \"30d\", hjust = 0, vjust = 1.5,\n           size = 3, colour = pal$red) +\n  facet_wrap(~month_lbl, nrow = 2) +\n  scale_x_continuous(limits = c(0, 100), breaks = c(0, 30, 60, 90)) +\n  labs(title    = \"TAT Distribution by Month (Jul – Dec 2024)\",\n       subtitle = \"Histogram + density curve · Dashed = 30-day target\",\n       x = \"TAT (days)\", y = \"Density\")\n\np_dist",
+    "crumbs": [
+      "Core Metrics",
+      "Claims Turnaround Time (TAT) Analytics"
+    ]
+  },
+  {
+    "objectID": "indicators/tat_analytics.html#sec-table",
+    "href": "indicators/tat_analytics.html#sec-table",
+    "title": "Claims Turnaround Time (TAT) Analytics",
+    "section": "Monthly Summary Table",
+    "text": "Monthly Summary Table\n\n\nShow code\ntable_data &lt;- paid_claims |&gt;\n  mutate(month = floor_date(paid_date, \"month\")) |&gt;\n  group_by(Month = month) |&gt;\n  summarise(\n    `Claims Paid`  = n(),\n    `Min TAT`      = min(tat_days),\n    `P25 TAT`      = quantile(tat_days, 0.25),\n    `Median TAT`   = round(median(tat_days), 1),\n    `Mean TAT`     = round(mean(tat_days), 1),\n    `P75 TAT`      = quantile(tat_days, 0.75),\n    `Max TAT`      = max(tat_days),\n    `% ≤ 30 days`  = round(mean(tat_days &lt;= 30) * 100, 1),\n    .groups = \"drop\"\n  ) |&gt;\n  mutate(Month = format(Month, \"%b %Y\"))\n\ntable_data |&gt;\n  gt() |&gt;\n  tab_header(\n    title    = md(\"**Monthly TAT Summary — 2024**\"),\n    subtitle = \"TAT = Paid Date − Created Date\"\n  ) |&gt;\n  tab_spanner(\n    label   = \"Turnaround Time (days)\",\n    columns = c(`Min TAT`, `P25 TAT`, `Median TAT`, `Mean TAT`, `P75 TAT`, `Max TAT`)\n  ) |&gt;\n  fmt_number(columns = `Claims Paid`,  decimals = 0, use_seps = TRUE) |&gt;\n  fmt_number(columns = c(`Min TAT`, `P25 TAT`, `Median TAT`,\n                         `Mean TAT`, `P75 TAT`, `Max TAT`),\n             decimals = 1) |&gt;\n  fmt_number(columns = `% ≤ 30 days`, decimals = 1, pattern = \"{x}%\") |&gt;\n  cols_align(align = \"center\", columns = -Month) |&gt;\n  cols_align(align = \"left\",   columns = Month) |&gt;\n  data_color(\n    columns = `Median TAT`,\n    method  = \"numeric\",\n    palette = c(\"#0E9F6E\", \"#FFFBEB\", \"#E02424\"),\n    domain  = c(15, 40)\n  ) |&gt;\n  data_color(\n    columns = `% ≤ 30 days`,\n    method  = \"numeric\",\n    palette = c(\"#E02424\", \"#FFFBEB\", \"#0E9F6E\"),\n    domain  = c(50, 90)\n  ) |&gt;\n  gtExtras::gt_highlight_rows(\n    rows      = Month == \"Nov 2024\",\n    fill      = \"#EFF6FF\",\n    font_weight = \"bold\"\n  ) |&gt;\n  tab_style(\n    style     = list(cell_fill(color = \"#1A56DB\"),\n                     cell_text(color = \"white\", weight = \"bold\")),\n    locations = cells_column_labels()\n  ) |&gt;\n  tab_style(\n    style     = list(cell_fill(color = \"#1A56DB\"),\n                     cell_text(color = \"white\", weight = \"bold\")),\n    locations = cells_column_spanners()\n  ) |&gt;\n  tab_options(\n    table.font.size               = 13,\n    heading.title.font.size       = 15,\n    table.width                   = pct(100),\n    table.border.top.color        = \"transparent\",\n    table.border.bottom.color     = \"transparent\",\n    row.striping.background_color = \"#F8F9FC\",\n    row.striping.include_table_body = TRUE\n  ) |&gt;\n  opt_row_striping() |&gt;\n  tab_footnote(\n    footnote  = \"Highlighted row = current reporting month (Nov 2024)\",\n    locations = cells_title(groups = \"subtitle\")\n  )\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nMonthly TAT Summary — 2024\n\n\nTAT = Paid Date − Created Date1\n\n\nMonth\nClaims Paid\n\nTurnaround Time (days)\n\n% ≤ 30 days\n\n\nMin TAT\nP25 TAT\nMedian TAT\nMean TAT\nP75 TAT\nMax TAT\n\n\n\n\nJan 2024\n25\n5.0\n9.0\n11.0\n12.8\n15.0\n26.0\n100.0%\n\n\nFeb 2024\n80\n7.0\n13.0\n20.0\n21.6\n28.0\n57.0\n80.0%\n\n\nMar 2024\n81\n5.0\n15.0\n22.0\n26.2\n37.0\n69.0\n69.1%\n\n\nApr 2024\n96\n7.0\n13.8\n18.5\n22.5\n28.0\n70.0\n78.1%\n\n\nMay 2024\n84\n7.0\n15.0\n20.5\n24.3\n29.0\n85.0\n78.6%\n\n\nJun 2024\n85\n7.0\n14.0\n21.0\n23.8\n29.0\n87.0\n81.2%\n\n\nJul 2024\n85\n7.0\n14.0\n20.0\n23.4\n28.0\n110.0\n78.8%\n\n\nAug 2024\n97\n5.0\n15.0\n23.0\n26.8\n33.0\n81.0\n66.0%\n\n\nSep 2024\n80\n4.0\n15.0\n20.0\n23.0\n30.2\n73.0\n75.0%\n\n\nOct 2024\n90\n5.0\n14.0\n22.0\n25.3\n29.8\n112.0\n76.7%\n\n\nNov 2024\n74\n3.0\n14.0\n22.0\n23.8\n29.8\n72.0\n75.7%\n\n\nDec 2024\n78\n6.0\n14.0\n19.0\n22.4\n27.8\n59.0\n80.8%\n\n\nJan 2025\n51\n7.0\n19.5\n27.0\n29.0\n34.0\n79.0\n70.6%\n\n\nFeb 2025\n10\n38.0\n41.2\n42.5\n46.4\n47.5\n74.0\n0.0%\n\n\n\n1 Highlighted row = current reporting month (Nov 2024)",
+    "crumbs": [
+      "Core Metrics",
+      "Claims Turnaround Time (TAT) Analytics"
+    ]
+  },
+  {
+    "objectID": "indicators/tat_analytics.html#sec-appendix",
+    "href": "indicators/tat_analytics.html#sec-appendix",
+    "title": "Claims Turnaround Time (TAT) Analytics",
+    "section": "Appendix: Data Dictionary",
+    "text": "Appendix: Data Dictionary\n\n\n\nField\nDescription\n\n\n\n\nclaim_id\nUnique claim identifier\n\n\ncreated_date\nDate the claim was submitted (TAT start)\n\n\npaid_date\nDate the claim was paid (TAT end)\n\n\ntat_days\npaid_date − created_date in calendar days\n\n\nis_paid\nBoolean — whether a paid date exists\n\n\n\n\nNote: Sample data is randomly generated with set.seed(42). Replace the data generation block with your actual claims extract.",
+    "crumbs": [
+      "Core Metrics",
+      "Claims Turnaround Time (TAT) Analytics"
+    ]
+  },
+  {
+    "objectID": "indicators/erp-payment-ready.html",
+    "href": "indicators/erp-payment-ready.html",
+    "title": "Indicator Name: Payment ready unsettled claims",
+    "section": "",
+    "text": "Business Goal: The goal of this indicator is to determine the number and value of claims that are payment ready but have not been paid. By payment ready, it means that the claims are have been sent for payment processing. This means that these are claims in ERP with unpaid status.\nTarget Audience: Social Health Authority and Digital Health Agency.\nUpdate Frequency: Real-time"
+  },
+  {
+    "objectID": "indicators/erp-payment-ready.html#executive-summary",
+    "href": "indicators/erp-payment-ready.html#executive-summary",
+    "title": "Indicator Name: Payment ready unsettled claims",
+    "section": "",
+    "text": "Business Goal: The goal of this indicator is to determine the number and value of claims that are payment ready but have not been paid. By payment ready, it means that the claims are have been sent for payment processing. This means that these are claims in ERP with unpaid status.\nTarget Audience: Social Health Authority and Digital Health Agency.\nUpdate Frequency: Real-time"
+  },
+  {
+    "objectID": "indicators/erp-payment-ready.html#calculation-logic-formula",
+    "href": "indicators/erp-payment-ready.html#calculation-logic-formula",
+    "title": "Indicator Name: Payment ready unsettled claims",
+    "section": "2 2. Calculation Logic & Formula",
+    "text": "2 2. Calculation Logic & Formula\nThis section defines the “North Star” for the Backend Team.\n\n2.1 Mathematical Definition\nThe indicator is calculated as:\n\\[Numerator = \\frac{\\sum(\\text{Number of claims in ERP where status is unpaid})}{\\sum(\\text{Number})} \\times 100\\]\n\\[Number = \\frac{\\sum(\\text{Number of claims in ERP where status is unpaid})}{\\sum(\\text{Number})} \\times 100\\]\n\n\n2.2 Logic Rules\n\nInclusion: Include only records where status = 'ACTIVE'.\nExclusion: Ignore test accounts (IDs starting with TEST_).\nNull Handling: If denominator is 0, return null (not 0)."
+  },
+  {
+    "objectID": "indicators/erp-payment-ready.html#data-schema-backend-specs",
+    "href": "indicators/erp-payment-ready.html#data-schema-backend-specs",
+    "title": "Indicator Name: Payment ready unsettled claims",
+    "section": "3 3. Data Schema (Backend Specs)",
+    "text": "3 3. Data Schema (Backend Specs)\nSpecific requirements for the data warehouse/API layer.\n\n\n\n\n\n\n\n\n\nField Name\nType\nSource Table\nDescription\n\n\n\n\nevent_timestamp\nDateTime\nraw_events\nThe UTC time of the action.\n\n\nmetric_value\nFloat\nCalculated\nThe final percentage result.\n\n\ndimension_category\nString\ndim_products\nUsed for frontend filtering."
+  },
+  {
+    "objectID": "indicators/erp-payment-ready.html#visual-prototype-frontend-specs",
+    "href": "indicators/erp-payment-ready.html#visual-prototype-frontend-specs",
+    "title": "Indicator Name: Payment ready unsettled claims",
+    "section": "4 4. Visual Prototype (Frontend Specs)",
+    "text": "4 4. Visual Prototype (Frontend Specs)\nThis section uses dummy data to show the Frontend Team how to render the indicator."
+  },
+  {
+    "objectID": "index.html",
+    "href": "index.html",
+    "title": "Unified Indicator Registry",
+    "section": "",
+    "text": "Welcome to the Single Source of Truth for our analytics logic.",
+    "crumbs": [
+      "Overview",
+      "Unified Indicator Registry"
+    ]
+  },
+  {
+    "objectID": "index.html#indicator-health-status",
+    "href": "index.html#indicator-health-status",
+    "title": "Unified Indicator Registry",
+    "section": "1 Indicator Health Status",
+    "text": "1 Indicator Health Status\n\n\n\nIndicator\nStatus\nLast Validated\nOwner\n\n\n\n\nUnsettled payment ready\n?meta:status.prod\n2023-10-27\nBackend Team\n\n\nTurn Around Time\n?meta:status.dev\n2023-10-25\nData Science\n\n\n\n\n\n\n\n\n\nImportant\n\n\n\nAll definitions here are binding for both Frontend (UI) and Backend (ETL) implementations.",
+    "crumbs": [
+      "Overview",
+      "Unified Indicator Registry"
+    ]
   }
 ]

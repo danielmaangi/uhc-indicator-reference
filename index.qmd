@@ -1,5 +1,5 @@
 ---
-title: "Indicator Directory"
+title: "Unified Indicator Registry"
 ---
 
 Welcome to the **Single Source of Truth** for our analytics logic.
@@ -7,10 +7,10 @@ Welcome to the **Single Source of Truth** for our analytics logic.
 ## Indicator Health Status
 
 | Indicator | Status | Last Validated | Owner |
-|-----------|--------|----------------|-------|
-| [Monthly Revenue](indicators/revenue.qmd) | {{< meta status.prod >}} | 2023-10-27 | Backend Team |
-| [Churn Rate](indicators/churn_rate.qmd) | {{< meta status.dev >}} | 2023-10-25 | Data Science |
+|-----------------|----------------|-------------------------|----------------|
+| [Unsettled payment ready](indicators/erp-payment-ready.qmd) | {{< meta status.prod >}} | 2023-10-27 | Backend Team |
+| [Turn Around Time](indicators/tat_analytics.qmd) | {{< meta status.dev >}} | 2023-10-25 | Data Science |
 
-::: {.callout-important}
+::: callout-important
 All definitions here are binding for both Frontend (UI) and Backend (ETL) implementations.
 :::

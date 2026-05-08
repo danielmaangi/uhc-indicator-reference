@@ -16,7 +16,7 @@ website:
           - index.qmd
       - section: "Core Metrics"
         contents:
-          - indicators/revenue.qmd
+          - indicators/tat_analytics.qmd
           - indicators/churn_rate.qmd
       - section: "User Engagement"
         contents:

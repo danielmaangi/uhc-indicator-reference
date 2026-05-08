@@ -1,5 +1,5 @@
 ---
-title: "Indicator Name: [Insert Name]"
+title: "Indicator Name: Payment ready unsettled claims"
 subtitle: "Technical Requirements & Definition Document"
 author: "Product/Analytics Lead"
 date: last-modified
@@ -14,7 +14,11 @@ format:
 
 ## 1. Executive Summary
 
-**Business Goal:** \[Describe what decision this indicator drives.\] **Target Audience:** \[e.g., Executive Leadership, Marketing Ops\] **Update Frequency:** \[e.g., Real-time, Daily at 06:00 UTC, Monthly\]
+**Business Goal:** The goal of this indicator is to determine the number and value of claims that are payment ready but have not been paid. By payment ready, it means that the claims are have been sent for payment processing. This means that these are claims in ERP with unpaid status. 
+
+**Target Audience:** Social Health Authority and Digital Health Agency.
+
+**Update Frequency:** Real-time
 
 ------------------------------------------------------------------------
 
@@ -24,7 +28,11 @@ This section defines the "North Star" for the **Backend Team**.
 
 ### Mathematical Definition
 
-The indicator is calculated as: $$Indicator = \frac{\sum(\text{Successful Transactions})}{\sum(\text{Total Attempts})} \times 100$$
+The indicator is calculated as: 
+
+$$Numerator = \frac{\sum(\text{Number of claims in ERP where status is unpaid})}{\sum(\text{Number})} \times 100$$
+
+$$Number = \frac{\sum(\text{Number of claims in ERP where status is unpaid})}{\sum(\text{Number})} \times 100$$
 
 ### Logic Rules
 
@@ -39,7 +47,7 @@ The indicator is calculated as: $$Indicator = \frac{\sum(\text{Successful Transa
 Specific requirements for the data warehouse/API layer.
 
 | Field Name           | Type     | Source Table   | Description                  |
-|----------------|----------------|---------------------|-------------------|
+|-----------------|-----------------|--------------------|------------------|
 | `event_timestamp`    | DateTime | `raw_events`   | The UTC time of the action.  |
 | `metric_value`       | Float    | Calculated     | The final percentage result. |
 | `dimension_category` | String   | `dim_products` | Used for frontend filtering. |
@@ -47,7 +55,9 @@ Specific requirements for the data warehouse/API layer.
 ------------------------------------------------------------------------
 
 ## 4. Visual Prototype (Frontend Specs)
+
 This section uses dummy data to show the **Frontend Team** how to render the indicator.
+
 ```{r}
 #| label: set-dummy-data
 #| message: false
@@ -71,8 +81,3 @@ ggplot(dummy_data, aes(x = date, y = value)) +
                          y = "Indicator Value (%)", x = "Month")
 
 ```
-
-
-
-
-
