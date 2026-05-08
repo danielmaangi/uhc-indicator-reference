@@ -1,0 +1,78 @@
+---
+title: "Indicator Name: [Insert Name]"
+subtitle: "Technical Requirements & Definition Document"
+author: "Product/Analytics Lead"
+date: last-modified
+format: 
+  html:
+    toc: true
+    toc-location: left
+    theme: cosmo
+    code-fold: true
+    embed-resources: true
+---
+
+## 1. Executive Summary
+
+**Business Goal:** \[Describe what decision this indicator drives.\] **Target Audience:** \[e.g., Executive Leadership, Marketing Ops\] **Update Frequency:** \[e.g., Real-time, Daily at 06:00 UTC, Monthly\]
+
+------------------------------------------------------------------------
+
+## 2. Calculation Logic & Formula
+
+This section defines the "North Star" for the **Backend Team**.
+
+### Mathematical Definition
+
+The indicator is calculated as: $$Indicator = \frac{\sum(\text{Successful Transactions})}{\sum(\text{Total Attempts})} \times 100$$
+
+### Logic Rules
+
+1.  **Inclusion:** Include only records where `status = 'ACTIVE'`.
+2.  **Exclusion:** Ignore test accounts (IDs starting with `TEST_`).
+3.  **Null Handling:** If `denominator` is 0, return `null` (not 0).
+
+------------------------------------------------------------------------
+
+## 3. Data Schema (Backend Specs)
+
+Specific requirements for the data warehouse/API layer.
+
+| Field Name           | Type     | Source Table   | Description                  |
+|----------------|----------------|---------------------|-------------------|
+| `event_timestamp`    | DateTime | `raw_events`   | The UTC time of the action.  |
+| `metric_value`       | Float    | Calculated     | The final percentage result. |
+| `dimension_category` | String   | `dim_products` | Used for frontend filtering. |
+
+------------------------------------------------------------------------
+
+## 4. Visual Prototype (Frontend Specs)
+This section uses dummy data to show the **Frontend Team** how to render the indicator.
+```{r}
+#| label: set-dummy-data
+#| message: false
+#| warning: false
+#| echo: false
+
+library(ggplot2)
+library(dplyr)
+
+# Create dummy data representative of the production output
+
+dummy_data <- data.frame(
+  date = seq(as.Date("2023-01-01"), by = "month", length.out = 12), 
+  value = runif(12, 70, 95), target = rep(85, 12)
+  )
+
+ggplot(dummy_data, aes(x = date, y = value)) + 
+  geom_line(color = "#2c3e50", size = 1) + 
+  geom_hline(aes(yintercept = target), linetype = "dashed", color = "red") + 
+  theme_minimal() + labs(title = "Expected Visual: Trend vs Target", 
+                         y = "Indicator Value (%)", x = "Month")
+
+```
+
+
+
+
+

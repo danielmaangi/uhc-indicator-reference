@@ -1,0 +1,31 @@
+project:
+  type: website
+  output-dir: docs  # Ready for GitHub Pages or hosting
+
+website:
+  title: "UHC Analytics Indicator Reference Portal"
+  description: "Official Definitions & Technical Specs"
+  
+  # This creates the navigation sidebar
+  sidebar:
+    style: "floating"
+    search: true
+    contents:
+      - section: "Overview"
+        contents:
+          - index.qmd
+      - section: "Core Metrics"
+        contents:
+          - indicators/revenue.qmd
+          - indicators/churn_rate.qmd
+      - section: "User Engagement"
+        contents:
+          - indicators/active_users.qmd
+
+format:
+  html:
+    theme: zephyr
+    toc: true
+    code-fold: true
+    code-summary: "View Calculation Script"
+    number-sections: true

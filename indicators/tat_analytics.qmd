@@ -1,0 +1,447 @@
+---
+title: "Claims Turnaround Time (TAT) Analytics"
+subtitle: "Submission → Payment Duration Analysis · 2024"
+date: today
+date-format: "D MMMM YYYY"
+author: "Claims Analytics Team"
+format:
+  html:
+    theme: [flatly, custom.scss]
+    toc: true
+    toc-depth: 2
+    toc-title: "Contents"
+    toc-location: left
+    number-sections: false
+    code-fold: true
+    code-summary: "Show code"
+    code-tools: true
+    fig-width: 10
+    fig-height: 5
+    fig-dpi: 150
+    embed-resources: true          # single self-contained HTML file
+    page-layout: full
+execute:
+  echo: true
+  warning: false
+  message: false
+  cache: false
+---
+
+```{r}
+#| label: setup
+#| include: false
+
+# ── Install / load packages ──────────────────────────────────
+pkgs <- c("tidyverse", "lubridate", "scales", "glue",
+          "plotly", "gt", "gtExtras", "htmltools")
+installed <- rownames(installed.packages())
+to_install <- pkgs[!pkgs %in% installed]
+if (length(to_install)) install.packages(to_install, quiet = TRUE)
+invisible(lapply(pkgs, library, character.only = TRUE))
+
+# ── Colour palette ────────────────────────────────────────────
+pal <- list(
+  bg      = "#F4F6FB",
+  card    = "#FFFFFF",
+  primary = "#1A56DB",
+  accent  = "#7E3AF2",
+  green   = "#0E9F6E",
+  red     = "#E02424",
+  amber   = "#D97706",
+  text    = "#111928",
+  muted   = "#6B7280",
+  grid    = "#E5E7EB",
+  border  = "#D1D5DB"
+)
+
+# ── ggplot2 base theme ────────────────────────────────────────
+theme_tat <- function() {
+  theme_minimal(base_family = "sans") +
+    theme(
+      plot.background  = element_rect(fill = pal$bg,   colour = NA),
+      panel.background = element_rect(fill = pal$bg,   colour = NA),
+      panel.grid.major = element_line(colour = pal$grid, linewidth = 0.4),
+      panel.grid.minor = element_blank(),
+      axis.text        = element_text(colour = pal$muted, size = 9),
+      axis.title       = element_text(colour = pal$text,  size = 10),
+      plot.title       = element_text(colour = pal$text,  size = 13,
+                                      face = "bold", margin = margin(b = 4)),
+      plot.subtitle    = element_text(colour = pal$muted, size = 9,
+                                      margin = margin(b = 12)),
+      legend.position  = "bottom",
+      legend.text      = element_text(colour = pal$muted, size = 8),
+      plot.margin      = margin(12, 16, 12, 16),
+      strip.text       = element_text(colour = pal$text, face = "bold", size = 10)
+    )
+}
+theme_set(theme_tat())
+```
+
+```{r}
+#| label: data-generation
+#| include: false
+
+# ── Reproducible sample data ──────────────────────────────────
+set.seed(42)
+n_claims <- 1200
+
+claims_raw <- tibble(
+  claim_id     = paste0("CLM-", str_pad(seq_len(n_claims), 5, pad = "0")),
+  created_date = sample(
+    seq(as.Date("2024-01-01"), as.Date("2024-12-31"), by = "day"),
+    n_claims, replace = TRUE
+  )
+) |>
+  mutate(
+    is_paid    = runif(n()) < 0.85,
+    raw_tat    = pmax(1L, pmin(round(rlnorm(n(), meanlog = 3.0, sdlog = 0.55)), 120L)),
+    paid_date  = if_else(is_paid, created_date + raw_tat, as.Date(NA)),
+    tat_days   = as.numeric(paid_date - created_date),
+    created_month = floor_date(created_date, "month"),
+    paid_month    = floor_date(paid_date,    "month")
+  )
+
+paid_claims <- claims_raw |> filter(is_paid)
+
+# ── Reference months ─────────────────────────────────────────
+cur_month  <- as.Date("2024-11-01")
+prev_month <- cur_month %m-% months(1)
+
+cur_paid  <- paid_claims |> filter(paid_month == cur_month)
+prev_paid <- paid_claims |> filter(paid_month == prev_month)
+cur_all   <- claims_raw  |> filter(created_month == cur_month)
+
+# ── Metric helpers ────────────────────────────────────────────
+metrics <- function(df) {
+  list(
+    n_paid     = nrow(df),
+    min_tat    = min(df$tat_days),
+    median_tat = median(df$tat_days),
+    mean_tat   = mean(df$tat_days),
+    max_tat    = max(df$tat_days),
+    pct_30     = mean(df$tat_days <= 30) * 100
+  )
+}
+
+m_cur  <- metrics(cur_paid)
+m_prev <- metrics(prev_paid)
+
+delta <- list(
+  min_tat    = m_cur$min_tat    - m_prev$min_tat,
+  median_tat = m_cur$median_tat - m_prev$median_tat,
+  max_tat    = m_cur$max_tat    - m_prev$max_tat,
+  pct_30     = m_cur$pct_30     - m_prev$pct_30
+)
+
+fmt_delta <- function(x, unit = "days", good_dir = -1) {
+  # good_dir: -1 = lower is better, +1 = higher is better
+  colour <- if (x * good_dir < 0) pal$green else if (x * good_dir > 0) pal$red else pal$muted
+  sign   <- if (x >= 0) "▲ +" else "▼ "
+  label  <- glue("{sign}{round(abs(x), 1)} {unit} vs prev month")
+  list(label = label, colour = colour)
+}
+
+d_min    <- fmt_delta(delta$min_tat)
+d_median <- fmt_delta(delta$median_tat)
+d_max    <- fmt_delta(delta$max_tat)
+d_pct    <- fmt_delta(delta$pct_30, unit = "pp", good_dir = 1)
+```
+
+```{r}
+#| label: card-css
+#| echo: false
+#| results: asis
+
+# Inline CSS for metric cards (avoids needing custom.scss for the cards)
+cat('
+<style>
+  .card-row   { display: flex; gap: 14px; flex-wrap: wrap; margin-bottom: 28px; }
+  .metric-card {
+    flex: 1 1 140px;
+    background: #fff;
+    border: 1px solid #E5E7EB;
+    border-radius: 10px;
+    padding: 18px 20px 14px;
+    box-shadow: 0 1px 4px rgba(0,0,0,.06);
+  }
+  .metric-card .card-label  { font-size: 11px; color: #6B7280; text-transform: uppercase;
+                               letter-spacing: .06em; margin-bottom: 6px; }
+  .metric-card .card-value  { font-size: 28px; font-weight: 700; color: #111928;
+                               line-height: 1.1; }
+  .metric-card .card-delta  { font-size: 11px; margin-top: 8px; font-weight: 500; }
+  .metric-card .card-sub    { font-size: 10px; color: #9CA3AF; margin-top: 2px; }
+  .section-label {
+    font-size: 11px; text-transform: uppercase; letter-spacing: .08em;
+    color: #6B7280; margin-bottom: 10px; font-weight: 600;
+  }
+</style>
+')
+```
+
+## AC1 · Summary Metrics {#sec-metrics}
+
+::: section-label
+November 2024 — Paid Date − Created Date
+:::
+
+```{r}
+#| label: metric-cards
+#| echo: false
+#| results: asis
+
+card <- function(label, value, delta_label = NULL, delta_colour = NULL, sub = NULL) {
+  delta_html <- if (!is.null(delta_label))
+    glue('<div class="card-delta" style="color:{delta_colour}">{delta_label}</div>')
+  else ""
+  sub_html <- if (!is.null(sub))
+    glue('<div class="card-sub">{sub}</div>')
+  else ""
+  glue('
+  <div class="metric-card">
+    <div class="card-label">{label}</div>
+    <div class="card-value">{value}</div>
+    {delta_html}
+    {sub_html}
+  </div>')
+}
+
+cards_html <- paste0(
+  '<div class="card-row">',
+  card("Total Claims",       format(nrow(cur_all),    big.mark = ","),
+       sub = "Created in Nov 2024"),
+  card("Paid Claims",        format(m_cur$n_paid,     big.mark = ","),
+       sub = glue("{round(m_cur$n_paid/nrow(cur_all)*100,1)}% of total")),
+  card("Min TAT",            glue("{m_cur$min_tat} days"),
+       d_min$label,    d_min$colour),
+  card("Median TAT",         glue("{round(m_cur$median_tat,1)} days"),
+       d_median$label, d_median$colour),
+  card("Max TAT",            glue("{m_cur$max_tat} days"),
+       d_max$label,    d_max$colour),
+  card("% Paid ≤ 30 days",  glue("{round(m_cur$pct_30,1)}%"),
+       d_pct$label,    d_pct$colour),
+  '</div>'
+)
+cat(cards_html)
+```
+
+------------------------------------------------------------------------
+
+## AC2 · TAT Trend Over Time {#sec-trend}
+
+The charts below show average TAT for claims that **completed** (received a paid date) within each period. Use the toggle to switch between weekly and monthly granularity.
+
+```{r}
+#| label: trend-data
+
+# Weekly
+weekly_tat <- paid_claims |>
+  mutate(period = floor_date(paid_date, "week", week_start = 1)) |>
+  group_by(period) |>
+  summarise(
+    avg_tat = mean(tat_days),
+    med_tat = median(tat_days),
+    n       = n(),
+    .groups = "drop"
+  ) |>
+  filter(n >= 5) |>
+  mutate(granularity = "Weekly")
+
+# Monthly
+monthly_tat <- paid_claims |>
+  mutate(period = floor_date(paid_date, "month")) |>
+  group_by(period) |>
+  summarise(
+    avg_tat = mean(tat_days),
+    med_tat = median(tat_days),
+    n       = n(),
+    .groups = "drop"
+  ) |>
+  mutate(granularity = "Monthly")
+```
+
+::: panel-tabset
+### 📅 Weekly
+
+```{r}
+#| label: chart-weekly
+#| fig-height: 4.5
+
+p_week <- ggplot(weekly_tat, aes(x = period)) +
+  geom_ribbon(aes(ymin = avg_tat - 4, ymax = avg_tat + 4),
+              fill = pal$primary, alpha = 0.10) +
+  geom_line(aes(y = avg_tat, colour = "Mean TAT"),  linewidth = 1.1) +
+  geom_line(aes(y = med_tat, colour = "Median TAT"), linewidth = 0.8, linetype = "dashed") +
+  geom_point(aes(y = avg_tat, colour = "Mean TAT",
+                 text = glue("Week: {format(period,'%d %b %Y')}\nMean TAT: {round(avg_tat,1)} days\nClaims: {n}")),
+             size = 2, shape = 21, fill = "white", stroke = 1.5) +
+  geom_hline(yintercept = 30, linetype = "dotted", colour = pal$red,
+             linewidth = 0.7) +
+  annotate("text", x = min(weekly_tat$period) + 3, y = 31.8,
+           label = "30-day target", hjust = 0, size = 2.8, colour = pal$red) +
+  scale_colour_manual(values = c("Mean TAT" = pal$primary, "Median TAT" = pal$accent),
+                      name = NULL) +
+  scale_x_date(date_labels = "%d %b", date_breaks = "4 weeks") +
+  scale_y_continuous(limits = c(0, NA), expand = expansion(mult = c(0, .12)),
+                     labels = \(x) paste0(x, "d")) +
+  labs(title    = "Average TAT by Week",
+       subtitle = "Jan – Dec 2024 · Plotted on paid date · Shaded band = ±4 days",
+       x = NULL, y = "Avg TAT (days)")
+
+ggplotly(p_week, tooltip = "text") |>
+  layout(legend = list(orientation = "h", x = 0, y = -0.15))
+```
+
+### 📆 Monthly
+
+```{r}
+#| label: chart-monthly
+#| fig-height: 4.5
+
+p_month <- ggplot(monthly_tat, aes(x = period)) +
+  geom_col(aes(y = avg_tat,
+               text = glue("{format(period,'%b %Y')}\nMean: {round(avg_tat,1)}d\nMedian: {round(med_tat,1)}d\nClaims: {n}")),
+           fill = pal$primary, alpha = 0.75, width = 22) +
+  geom_line(aes(y = avg_tat),  colour = pal$primary, linewidth = 1.1) +
+  geom_line(aes(y = med_tat),  colour = pal$accent,  linewidth = 0.9, linetype = "dashed") +
+  geom_point(aes(y = avg_tat), colour = pal$primary, size = 3) +
+  geom_point(aes(y = med_tat), colour = pal$accent,  size = 2.5, shape = 21,
+             fill = "white", stroke = 1.2) +
+  geom_text(aes(y = avg_tat, label = round(avg_tat, 1)),
+            vjust = -0.9, size = 2.7, colour = pal$text) +
+  geom_hline(yintercept = 30, linetype = "dotted", colour = pal$red, linewidth = 0.7) +
+  annotate("text", x = min(monthly_tat$period) + 5, y = 31.8,
+           label = "30-day target", hjust = 0, size = 2.8, colour = pal$red) +
+  scale_x_date(date_labels = "%b '%y", date_breaks = "1 month") +
+  scale_y_continuous(limits = c(0, NA), expand = expansion(mult = c(0, .15)),
+                     labels = \(x) paste0(x, "d")) +
+  labs(title    = "Average TAT by Month",
+       subtitle = "Jan – Dec 2024 · Bars = mean · Dashed line = median · Label = mean days",
+       x = NULL, y = "Avg TAT (days)")
+
+ggplotly(p_month, tooltip = "text") |>
+  layout(showlegend = FALSE)
+```
+:::
+
+------------------------------------------------------------------------
+
+## TAT Distribution {#sec-dist}
+
+```{r}
+#| label: chart-distribution
+#| fig-height: 4
+
+p_dist <- paid_claims |>
+  mutate(month_lbl = format(paid_month, "%b")) |>
+  filter(paid_month >= as.Date("2024-07-01")) |>   # last 6 months for readability
+  ggplot(aes(x = tat_days, y = after_stat(density))) +
+  geom_histogram(fill = pal$primary, alpha = 0.7, binwidth = 5, boundary = 0) +
+  geom_density(colour = pal$accent, linewidth = 0.9) +
+  geom_vline(xintercept = 30, colour = pal$red, linetype = "dashed", linewidth = 0.8) +
+  annotate("text", x = 31, y = Inf, label = "30d", hjust = 0, vjust = 1.5,
+           size = 3, colour = pal$red) +
+  facet_wrap(~month_lbl, nrow = 2) +
+  scale_x_continuous(limits = c(0, 100), breaks = c(0, 30, 60, 90)) +
+  labs(title    = "TAT Distribution by Month (Jul – Dec 2024)",
+       subtitle = "Histogram + density curve · Dashed = 30-day target",
+       x = "TAT (days)", y = "Density")
+
+p_dist
+```
+
+------------------------------------------------------------------------
+
+## Monthly Summary Table {#sec-table}
+
+```{r}
+#| label: summary-table
+
+table_data <- paid_claims |>
+  mutate(month = floor_date(paid_date, "month")) |>
+  group_by(Month = month) |>
+  summarise(
+    `Claims Paid`  = n(),
+    `Min TAT`      = min(tat_days),
+    `P25 TAT`      = quantile(tat_days, 0.25),
+    `Median TAT`   = round(median(tat_days), 1),
+    `Mean TAT`     = round(mean(tat_days), 1),
+    `P75 TAT`      = quantile(tat_days, 0.75),
+    `Max TAT`      = max(tat_days),
+    `% ≤ 30 days`  = round(mean(tat_days <= 30) * 100, 1),
+    .groups = "drop"
+  ) |>
+  mutate(Month = format(Month, "%b %Y"))
+
+table_data |>
+  gt() |>
+  tab_header(
+    title    = md("**Monthly TAT Summary — 2024**"),
+    subtitle = "TAT = Paid Date − Created Date"
+  ) |>
+  tab_spanner(
+    label   = "Turnaround Time (days)",
+    columns = c(`Min TAT`, `P25 TAT`, `Median TAT`, `Mean TAT`, `P75 TAT`, `Max TAT`)
+  ) |>
+  fmt_number(columns = `Claims Paid`,  decimals = 0, use_seps = TRUE) |>
+  fmt_number(columns = c(`Min TAT`, `P25 TAT`, `Median TAT`,
+                         `Mean TAT`, `P75 TAT`, `Max TAT`),
+             decimals = 1) |>
+  fmt_number(columns = `% ≤ 30 days`, decimals = 1, pattern = "{x}%") |>
+  cols_align(align = "center", columns = -Month) |>
+  cols_align(align = "left",   columns = Month) |>
+  data_color(
+    columns = `Median TAT`,
+    method  = "numeric",
+    palette = c("#0E9F6E", "#FFFBEB", "#E02424"),
+    domain  = c(15, 40)
+  ) |>
+  data_color(
+    columns = `% ≤ 30 days`,
+    method  = "numeric",
+    palette = c("#E02424", "#FFFBEB", "#0E9F6E"),
+    domain  = c(50, 90)
+  ) |>
+  gtExtras::gt_highlight_rows(
+    rows      = Month == "Nov 2024",
+    fill      = "#EFF6FF",
+    font_weight = "bold"
+  ) |>
+  tab_style(
+    style     = list(cell_fill(color = "#1A56DB"),
+                     cell_text(color = "white", weight = "bold")),
+    locations = cells_column_labels()
+  ) |>
+  tab_style(
+    style     = list(cell_fill(color = "#1A56DB"),
+                     cell_text(color = "white", weight = "bold")),
+    locations = cells_column_spanners()
+  ) |>
+  tab_options(
+    table.font.size               = 13,
+    heading.title.font.size       = 15,
+    table.width                   = pct(100),
+    table.border.top.color        = "transparent",
+    table.border.bottom.color     = "transparent",
+    row.striping.background_color = "#F8F9FC",
+    row.striping.include_table_body = TRUE
+  ) |>
+  opt_row_striping() |>
+  tab_footnote(
+    footnote  = "Highlighted row = current reporting month (Nov 2024)",
+    locations = cells_title(groups = "subtitle")
+  )
+```
+
+------------------------------------------------------------------------
+
+## Appendix: Data Dictionary {#sec-appendix}
+
+| Field          | Description                                 |
+|----------------|---------------------------------------------|
+| `claim_id`     | Unique claim identifier                     |
+| `created_date` | Date the claim was submitted (TAT start)    |
+| `paid_date`    | Date the claim was paid (TAT end)           |
+| `tat_days`     | `paid_date − created_date` in calendar days |
+| `is_paid`      | Boolean — whether a paid date exists        |
+
+> **Note:** Sample data is randomly generated with `set.seed(42)`. Replace the data generation block with your actual claims extract.
