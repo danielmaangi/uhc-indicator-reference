@@ -35,6 +35,76 @@
     "text": "4 4. Visual Prototype (Frontend Specs)\nThis section uses dummy data to show the Frontend Team how to render the indicator."
   },
   {
+    "objectID": "indicators/proportion_deliveries_sha.html",
+    "href": "indicators/proportion_deliveries_sha.html",
+    "title": "Proportion of Deliveries Paid by SHA",
+    "section": "",
+    "text": "November 2024 · SHA Claimed Deliveries ÷ KHIS Total Deliveries\n\n\n\n\nTotal Deliveries (D)\n\n\n9,018\n\n\n▼ 979 deliveries vs prev month\n\n\nSource: KHIS (BDsWWkJHuce)\n\n\n\n\nSHA Claimed Deliveries (N)\n\n\n6,319\n\n\n▼ 23 deliveries vs prev month\n\n\nSHA-08-005 / 006 / 007\n\n\n\n\nCoverage Proportion (N/D)\n\n\n70.1%\n\n\n▲ +6.6 pp vs prev month\n\n\n🟢 ≥80% 🟡 50–79% 🔴 &lt;50%"
+  },
+  {
+    "objectID": "indicators/proportion_deliveries_sha.html#sec-cards",
+    "href": "indicators/proportion_deliveries_sha.html#sec-cards",
+    "title": "Proportion of Deliveries Paid by SHA",
+    "section": "",
+    "text": "November 2024 · SHA Claimed Deliveries ÷ KHIS Total Deliveries\n\n\n\n\nTotal Deliveries (D)\n\n\n9,018\n\n\n▼ 979 deliveries vs prev month\n\n\nSource: KHIS (BDsWWkJHuce)\n\n\n\n\nSHA Claimed Deliveries (N)\n\n\n6,319\n\n\n▼ 23 deliveries vs prev month\n\n\nSHA-08-005 / 006 / 007\n\n\n\n\nCoverage Proportion (N/D)\n\n\n70.1%\n\n\n▲ +6.6 pp vs prev month\n\n\n🟢 ≥80% 🟡 50–79% 🔴 &lt;50%"
+  },
+  {
+    "objectID": "indicators/proportion_deliveries_sha.html#sec-trend",
+    "href": "indicators/proportion_deliveries_sha.html#sec-trend",
+    "title": "Proportion of Deliveries Paid by SHA",
+    "section": "AC3 · Monthly Trend Chart",
+    "text": "AC3 · Monthly Trend Chart\nDual-line chart showing total deliveries (KHIS) vs SHA claimed deliveries over time. The shaded area between the lines represents the coverage gap. Outliers in KHIS data are winsorised to the nearest IQR fence before plotting.\n\n\nShow code\n# ── FRONTEND SPEC ─────────────────────────────────────────────\n# Line 1 (blue,  solid):  Total deliveries — KHIS (D)\n# Line 2 (green, solid):  SHA claimed deliveries (N)\n# Shaded area between Line 1 and Line 2: coverage gap (neutral fill)\n# Reference line at 80% coverage threshold (optional, secondary y-axis)\n# Tooltip on hover: Month | Total (D) | SHA (N) | Proportion | Gap\n# X-axis: Monthly (MMM YYYY)\n# Y-axis left: count\n# Mark winsorised months with a distinct point shape (triangle)\n# ─────────────────────────────────────────────────────────────\n\np_trend &lt;- ggplot(monthly, aes(x = period_month)) +\n\n  # Gap fill between the two series\n  geom_ribbon(\n    aes(ymin = sha_total, ymax = khis_total),\n    fill  = pal$gap,\n    alpha = 0.6\n  ) +\n\n  # KHIS total deliveries\n  geom_line(\n    aes(y = khis_total, colour = \"Total Deliveries (KHIS)\"),\n    linewidth = 1.2\n  ) +\n  geom_point(\n    aes(y = khis_total, colour = \"Total Deliveries (KHIS)\",\n        shape = as.factor(outliers &gt; 0),\n        text  = glue(\n          \"Month: {month_lbl}\\n\",\n          \"Total (KHIS): {format(khis_total, big.mark=',')}\\n\",\n          \"SHA Claimed:  {format(sha_total,  big.mark=',')}\\n\",\n          \"Proportion:   {round(proportion*100,1)}%\\n\",\n          \"Gap:          {format(gap, big.mark=',')}\\n\",\n          \"{if_else(outliers&gt;0, '⚠ KHIS outlier(s) winsorised', '')}\"\n        )\n    ),\n    size = 3, stroke = 1.2, fill = \"white\"\n  ) +\n\n  # SHA claimed deliveries\n  geom_line(\n    aes(y = sha_total, colour = \"SHA Claimed (N)\"),\n    linewidth = 1.2, linetype = \"solid\"\n  ) +\n  geom_point(\n    aes(y = sha_total, colour = \"SHA Claimed (N)\"),\n    size = 2.5\n  ) +\n\n  scale_colour_manual(\n    values = c(\"Total Deliveries (KHIS)\" = pal$primary,\n               \"SHA Claimed (N)\"         = pal$accent),\n    name = NULL\n  ) +\n  scale_shape_manual(\n    values = c(\"FALSE\" = 21, \"TRUE\" = 24),   # 24 = triangle → outlier month\n    labels = c(\"Normal\", \"Outlier winsorised\"),\n    name   = \"KHIS data\"\n  ) +\n  scale_x_date(date_labels = \"%b '%y\", date_breaks = \"1 month\") +\n  scale_y_continuous(\n    labels = label_comma(),\n    expand = expansion(mult = c(0, 0.12))\n  ) +\n  labs(\n    title    = \"Monthly Deliveries: KHIS Total vs SHA Claimed\",\n    subtitle = \"Shaded area = coverage gap · ▲ = KHIS outlier winsorised to IQR fence\",\n    x = NULL, y = \"Delivery Count\"\n  )\n\nggplotly(p_trend, tooltip = \"text\") |&gt;\n  layout(legend = list(orientation = \"h\", x = 0, y = -0.18))"
+  },
+  {
+    "objectID": "indicators/proportion_deliveries_sha.html#sec-table",
+    "href": "indicators/proportion_deliveries_sha.html#sec-table",
+    "title": "Proportion of Deliveries Paid by SHA",
+    "section": "AC2 · County Comparison Table",
+    "text": "AC2 · County Comparison Table\n\n\nShow code\n# ── FRONTEND SPEC ─────────────────────────────────────────────\n# Columns: County | KHIS Deliveries | SHA Claimed | Proportion\n# Default sort: Proportion ASCENDING (lowest coverage first)\n# Sortable by all columns (click header)\n# Proportion column: colour-coded badge\n#   🔴 Red   &lt; 50 %\n#   🟡 Amber 50 – 79 %\n#   🟢 Green ≥ 80 %\n# Counties with zero SHA claims MUST appear (left-join preserved)\n# Table reacts to Date and County global filters\n#\n# ── BACKEND SPEC ──────────────────────────────────────────────\n# GROUP BY county\n# KHIS count : SUM of winsorised khis_count in filtered window\n# SHA count  : SUM of sha_count in filtered window (0 if no claims)\n# Proportion : sha_count / khis_count  (NULL-safe: 0 / 0 → 0)\n# ─────────────────────────────────────────────────────────────\n\nprop_badge &lt;- function(val_pct, colour) {\n  cls &lt;- glue(\"badge-{colour}\")\n  glue('&lt;span class=\"{cls}\"&gt;{val_pct}%&lt;/span&gt;')\n}\n\ncounty_tbl %&gt;%\n  mutate(prop_cell = map2_chr(prop_pct, prop_colour, prop_badge)) %&gt;%\n  select(\n    County         = county,\n    `KHIS Deliveries` = khis_count,\n    `SHA Claimed`  = sha_count,\n    `Proportion`   = prop_cell\n  ) %&gt;%\n  gt() %&gt;%\n  tab_header(\n    title    = md(\"**County-Level SHA Delivery Coverage**\"),\n    subtitle = glue(\"Period: {format(filter_date_min,'%b %Y')} – {format(filter_date_max,'%b %Y')} · Sorted by Proportion ↑\")\n  ) %&gt;%\n  fmt_number(columns = c(`KHIS Deliveries`, `SHA Claimed`),\n             decimals = 0, use_seps = TRUE) %&gt;%\n  fmt_markdown(columns = `Proportion`) %&gt;%\n  cols_align(align = \"right\",  columns = c(`KHIS Deliveries`, `SHA Claimed`)) %&gt;%\n  cols_align(align = \"center\", columns = `Proportion`) %&gt;%\n  cols_align(align = \"left\",   columns = County) %&gt;%\n  tab_style(\n    style     = list(cell_fill(color = \"#1A56DB\"),\n                     cell_text(color = \"white\", weight = \"bold\")),\n    locations = cells_column_labels()\n  ) %&gt;%\n  tab_options(\n    table.font.size                 = 13,\n    heading.title.font.size         = 15,\n    table.width                     = pct(100),\n    table.border.top.color          = \"transparent\",\n    table.border.bottom.color       = \"transparent\",\n    row.striping.background_color   = \"#F8F9FC\",\n    row.striping.include_table_body = TRUE\n  ) %&gt;%\n  opt_row_striping() %&gt;%\n  tab_footnote(\n    footnote  = md(\"🔴 &lt;50% · 🟡 50–79% · 🟢 ≥80% · Counties with zero SHA claims are included.\"),\n    locations = cells_title(groups = \"subtitle\")\n  )\n\n\n\n\n\n\n\n\nCounty-Level SHA Delivery Coverage\n\n\nPeriod: Jan 2024 – Nov 2024 · Sorted by Proportion ↑1\n\n\nCounty\nKHIS Deliveries\nSHA Claimed\nProportion\n\n\n\n\nKitui\n5,865\n3,574\n60.9%\n\n\nGarissa\n4,766\n2,946\n61.8%\n\n\nKisumu\n6,018\n3,744\n62.2%\n\n\nMeru\n5,958\n3,731\n62.6%\n\n\nSiaya\n5,475\n3,429\n62.6%\n\n\nNyeri\n5,692\n3,585\n63%\n\n\nBomet\n5,210\n3,346\n64.2%\n\n\nKakamega\n5,309\n3,541\n66.7%\n\n\nEmbu\n4,902\n3,285\n67%\n\n\nEldoret\n5,486\n3,679\n67.1%\n\n\nMachakos\n4,781\n3,208\n67.1%\n\n\nKisii\n5,620\n3,785\n67.3%\n\n\nMombasa\n4,534\n3,067\n67.6%\n\n\nNairobi\n6,093\n4,128\n67.7%\n\n\nVihiga\n5,235\n3,613\n69%\n\n\nThika\n4,917\n3,451\n70.2%\n\n\nKilifi\n5,403\n3,803\n70.4%\n\n\nNakuru\n4,158\n2,983\n71.7%\n\n\nBungoma\n4,641\n3,402\n73.3%\n\n\nNandi\n4,594\n3,390\n73.8%\n\n\n\n1 🔴 &lt;50% · 🟡 50–79% · 🟢 ≥80% · Counties with zero SHA claims are included."
+  },
+  {
+    "objectID": "indicators/proportion_deliveries_sha.html#sec-appendix",
+    "href": "indicators/proportion_deliveries_sha.html#sec-appendix",
+    "title": "Proportion of Deliveries Paid by SHA",
+    "section": "Appendix: Data Dictionary",
+    "text": "Appendix: Data Dictionary\n\n\n\n\n\n\n\nField\nDescription\n\n\n\n\nkhis_count\nMonthly total deliveries from DHIS2 element BDsWWkJHuce, winsorised for outliers\n\n\nsha_count\nMonthly deliveries claimed under SHA-08-005, SHA-08-006, SHA-08-007\n\n\nproportion\nsha_count / khis_count — SHA coverage rate (capped at 1.0)\n\n\nis_outlier\nTRUE if raw khis_count fell outside [Q1 − 1.5·IQR, Q3 + 1.5·IQR]\n\n\nperiod_month\nFirst day of the reporting month (join key between KHIS and SHA)\n\n\ncounty\nCounty name — must be harmonised between SHA and KHIS before joining\n\n\n\nIntervention codes included\n\n\n\nCode\nIntervention\n\n\n\n\nSHA-08-005\nVaginal delivery\n\n\nSHA-08-006\nCaesarean section\n\n\nSHA-08-007\nMultiple births delivery\n\n\n\nKHIS data element\n\n\n\nIndicator\nDHIS2 ID\n\n\n\n\nTotal deliveries\nBDsWWkJHuce\n\n\n\n\nNote: All figures are synthetic (generated with set.seed(42)). Replace the df_sha and df_khis data-generation blocks with real database / DHIS2 API queries. Apply the IQR winsorisation step server-side before joining."
+  },
+  {
+    "objectID": "indicators/erp-payment-ready.html",
+    "href": "indicators/erp-payment-ready.html",
+    "title": "Indicator Name: Payment ready unsettled claims",
+    "section": "",
+    "text": "Business Goal: The goal of this indicator is to determine the number and value of claims that are payment ready but have not been paid. By payment ready, it means that the claims are have been sent for payment processing. This means that these are claims in ERP with unpaid status.\nTarget Audience: Social Health Authority and Digital Health Agency.\nUpdate Frequency: Real-time"
+  },
+  {
+    "objectID": "indicators/erp-payment-ready.html#executive-summary",
+    "href": "indicators/erp-payment-ready.html#executive-summary",
+    "title": "Indicator Name: Payment ready unsettled claims",
+    "section": "",
+    "text": "Business Goal: The goal of this indicator is to determine the number and value of claims that are payment ready but have not been paid. By payment ready, it means that the claims are have been sent for payment processing. This means that these are claims in ERP with unpaid status.\nTarget Audience: Social Health Authority and Digital Health Agency.\nUpdate Frequency: Real-time"
+  },
+  {
+    "objectID": "indicators/erp-payment-ready.html#calculation-logic-formula",
+    "href": "indicators/erp-payment-ready.html#calculation-logic-formula",
+    "title": "Indicator Name: Payment ready unsettled claims",
+    "section": "2 2. Calculation Logic & Formula",
+    "text": "2 2. Calculation Logic & Formula\nThis section defines the “North Star” for the Backend Team.\n\n2.1 Mathematical Definition\nThe indicator is calculated as:\n\\[Numerator = \\frac{\\sum(\\text{Number of claims in ERP where status is unpaid})}{\\sum(\\text{Number})} \\times 100\\]\n\\[Number = \\frac{\\sum(\\text{Number of claims in ERP where status is unpaid})}{\\sum(\\text{Number})} \\times 100\\]\n\n\n2.2 Logic Rules\n\nInclusion: Include only records where status = 'ACTIVE'.\nExclusion: Ignore test accounts (IDs starting with TEST_).\nNull Handling: If denominator is 0, return null (not 0)."
+  },
+  {
+    "objectID": "indicators/erp-payment-ready.html#data-schema-backend-specs",
+    "href": "indicators/erp-payment-ready.html#data-schema-backend-specs",
+    "title": "Indicator Name: Payment ready unsettled claims",
+    "section": "3 3. Data Schema (Backend Specs)",
+    "text": "3 3. Data Schema (Backend Specs)\nSpecific requirements for the data warehouse/API layer.\n\n\n\n\n\n\n\n\n\nField Name\nType\nSource Table\nDescription\n\n\n\n\nevent_timestamp\nDateTime\nraw_events\nThe UTC time of the action.\n\n\nmetric_value\nFloat\nCalculated\nThe final percentage result.\n\n\ndimension_category\nString\ndim_products\nUsed for frontend filtering."
+  },
+  {
+    "objectID": "indicators/erp-payment-ready.html#visual-prototype-frontend-specs",
+    "href": "indicators/erp-payment-ready.html#visual-prototype-frontend-specs",
+    "title": "Indicator Name: Payment ready unsettled claims",
+    "section": "4 4. Visual Prototype (Frontend Specs)",
+    "text": "4 4. Visual Prototype (Frontend Specs)\nThis section uses dummy data to show the Frontend Team how to render the indicator."
+  },
+  {
     "objectID": "indicators/tat_analytics.html",
     "href": "indicators/tat_analytics.html",
     "title": "Claims Turnaround Time (TAT) Analytics",
@@ -99,41 +169,6 @@
       "Core Metrics",
       "Claims Turnaround Time (TAT) Analytics"
     ]
-  },
-  {
-    "objectID": "indicators/erp-payment-ready.html",
-    "href": "indicators/erp-payment-ready.html",
-    "title": "Indicator Name: Payment ready unsettled claims",
-    "section": "",
-    "text": "Business Goal: The goal of this indicator is to determine the number and value of claims that are payment ready but have not been paid. By payment ready, it means that the claims are have been sent for payment processing. This means that these are claims in ERP with unpaid status.\nTarget Audience: Social Health Authority and Digital Health Agency.\nUpdate Frequency: Real-time"
-  },
-  {
-    "objectID": "indicators/erp-payment-ready.html#executive-summary",
-    "href": "indicators/erp-payment-ready.html#executive-summary",
-    "title": "Indicator Name: Payment ready unsettled claims",
-    "section": "",
-    "text": "Business Goal: The goal of this indicator is to determine the number and value of claims that are payment ready but have not been paid. By payment ready, it means that the claims are have been sent for payment processing. This means that these are claims in ERP with unpaid status.\nTarget Audience: Social Health Authority and Digital Health Agency.\nUpdate Frequency: Real-time"
-  },
-  {
-    "objectID": "indicators/erp-payment-ready.html#calculation-logic-formula",
-    "href": "indicators/erp-payment-ready.html#calculation-logic-formula",
-    "title": "Indicator Name: Payment ready unsettled claims",
-    "section": "2 2. Calculation Logic & Formula",
-    "text": "2 2. Calculation Logic & Formula\nThis section defines the “North Star” for the Backend Team.\n\n2.1 Mathematical Definition\nThe indicator is calculated as:\n\\[Numerator = \\frac{\\sum(\\text{Number of claims in ERP where status is unpaid})}{\\sum(\\text{Number})} \\times 100\\]\n\\[Number = \\frac{\\sum(\\text{Number of claims in ERP where status is unpaid})}{\\sum(\\text{Number})} \\times 100\\]\n\n\n2.2 Logic Rules\n\nInclusion: Include only records where status = 'ACTIVE'.\nExclusion: Ignore test accounts (IDs starting with TEST_).\nNull Handling: If denominator is 0, return null (not 0)."
-  },
-  {
-    "objectID": "indicators/erp-payment-ready.html#data-schema-backend-specs",
-    "href": "indicators/erp-payment-ready.html#data-schema-backend-specs",
-    "title": "Indicator Name: Payment ready unsettled claims",
-    "section": "3 3. Data Schema (Backend Specs)",
-    "text": "3 3. Data Schema (Backend Specs)\nSpecific requirements for the data warehouse/API layer.\n\n\n\n\n\n\n\n\n\nField Name\nType\nSource Table\nDescription\n\n\n\n\nevent_timestamp\nDateTime\nraw_events\nThe UTC time of the action.\n\n\nmetric_value\nFloat\nCalculated\nThe final percentage result.\n\n\ndimension_category\nString\ndim_products\nUsed for frontend filtering."
-  },
-  {
-    "objectID": "indicators/erp-payment-ready.html#visual-prototype-frontend-specs",
-    "href": "indicators/erp-payment-ready.html#visual-prototype-frontend-specs",
-    "title": "Indicator Name: Payment ready unsettled claims",
-    "section": "4 4. Visual Prototype (Frontend Specs)",
-    "text": "4 4. Visual Prototype (Frontend Specs)\nThis section uses dummy data to show the Frontend Team how to render the indicator."
   },
   {
     "objectID": "index.html",
